@@ -1380,30 +1380,25 @@ def evaluate_generatorexp(
     custom_tools: dict[str, Callable],
     authorized_imports: list[str],
 ) -> Generator[Any]:
+    first, *remaining = genexp.generators
+    outer_iterator = iter(evaluate_ast(first.iter, state, static_tools, custom_tools, authorized_imports))
+    local_state = state.copy()
+
     def generator():
-        for gen in genexp.generators:
-            iter_value = evaluate_ast(gen.iter, state, static_tools, custom_tools, authorized_imports)
-            for value in iter_value:
-                new_state = state.copy()
-                set_value(
-                    gen.target,
-                    value,
-                    new_state,
+        for value in outer_iterator:
+            set_value(first.target, value, local_state, static_tools, custom_tools, authorized_imports)
+            if all(
+                evaluate_ast(clause, local_state, static_tools, custom_tools, authorized_imports)
+                for clause in first.ifs
+            ):
+                yield from _evaluate_comprehensions(
+                    remaining,
+                    lambda scope: evaluate_ast(genexp.elt, scope, static_tools, custom_tools, authorized_imports),
+                    local_state,
                     static_tools,
                     custom_tools,
                     authorized_imports,
                 )
-                if all(
-                    evaluate_ast(if_clause, new_state, static_tools, custom_tools, authorized_imports)
-                    for if_clause in gen.ifs
-                ):
-                    yield evaluate_ast(
-                        genexp.elt,
-                        new_state,
-                        static_tools,
-                        custom_tools,
-                        authorized_imports,
-                    )
 
     return generator()
 

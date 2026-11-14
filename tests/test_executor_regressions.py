@@ -169,3 +169,15 @@ def test_respect_print_options_and_streams_validates_options():
 )
 def test_share_comprehension_scope_across_iterations(expression):
     assert_python_output("i = 99\nfuncs = " + expression + "\nprint([f() for f in funcs], i)")
+
+
+@pytest.mark.parametrize(
+    "code",
+    [
+        "print(list((i, j) for i in range(2) for j in range(i, 3)))",
+        "values=[1, 2]\ngen=(x for x in values)\nvalues=[8]\nprint(list(gen))",
+        'events=[]\ndef source():\n    events.append("source")\n    return [1, 2]\ngen=(x for x in source())\nprint(events)\nprint(list(gen))',
+    ],
+)
+def test_evaluate_nested_generators_and_capture_outer_iterator(code):
+    assert_python_output(code)
