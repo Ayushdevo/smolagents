@@ -296,3 +296,9 @@ def test_evaluate_subscript_objects_before_indices():
     assert_python_output(
         'events=[]\ndef collection():\n    events.append("object")\n    return [9]\ndef index():\n    events.append("index")\n    return 0\nprint(collection()[index()], events)'
     )
+
+
+def test_delete_nested_assignment_target_sequences():
+    assert_python_output(
+        'a=1\nb=2\ndel (a, [b])\ntry:\n    print(a)\nexcept Exception:\n    print("a missing")\ntry:\n    print(b)\nexcept Exception:\n    print("b missing")'
+    )

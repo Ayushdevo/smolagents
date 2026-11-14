@@ -1441,7 +1441,9 @@ def evaluate_delete(
         authorized_imports: List of authorized imports
     """
     for target in delete_node.targets:
-        if isinstance(target, ast.Name):
+        if isinstance(target, (ast.Tuple, ast.List)):
+            evaluate_delete(ast.Delete(targets=target.elts), state, static_tools, custom_tools, authorized_imports)
+        elif isinstance(target, ast.Name):
             # Handle simple variable deletion (del x)
             if target.id in state:
                 del state[target.id]
