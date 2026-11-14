@@ -33,3 +33,12 @@ def test_evaluate_dictionary_entries_in_order():
 
 def test_evaluate_dictionary_entries_in_order_with_unpacking():
     assert_python_output("first = {'a': 1, 'b': 2}\nprint({**first, 'b': 3, **{'c': 4}})")
+
+
+@pytest.mark.parametrize("items", ["[]", "[1, 2]"])
+def test_execute_for_else_without_break(items):
+    assert_python_output("for item in " + items + ':\n    print(item)\nelse:\n    print("complete")')
+
+
+def test_execute_for_else_without_break_respects_break():
+    assert_python_output('for item in [1, 2]:\n    break\nelse:\n    print("complete")')
