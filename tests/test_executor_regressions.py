@@ -242,3 +242,19 @@ def test_apply_class_decorators():
     assert_python_output(
         'def decorate(cls):\n    cls.tag = "decorated"\n    return cls\n@decorate\nclass Value:\n    pass\nprint(Value.tag)'
     )
+
+
+@pytest.mark.parametrize("body", ["return 7", 'raise ValueError("body")'])
+def test_unwind_context_managers_on_enter_failure_and_control_flow(body):
+    code = (
+        'events=[]\nclass Manager:\n    def __enter__(self):\n        events.append("enter")\n        return (1, 2)\n    def __exit__(self, kind, value, tb):\n        events.append(kind is None)\ndef run():\n    with Manager() as (a, b):\n        '
+        + body
+        + '\ntry:\n    print(run())\nexcept ValueError:\n    print("caught")\nprint(events)'
+    )
+    assert_python_output(code)
+
+
+def test_unwind_context_managers_on_enter_failure_and_control_flow_enter_failure():
+    assert_python_output(
+        'events=[]\nclass Manager:\n    def __enter__(self):\n        return self\n    def __exit__(self, kind, value, tb):\n        events.append("exit")\nclass Broken:\n    def __enter__(self):\n        raise ValueError("enter")\n    def __exit__(self, kind, value, tb):\n        events.append("broken-exit")\ntry:\n    with Manager(), Broken():\n        pass\nexcept ValueError:\n    print(events)'
+    )
