@@ -1,9 +1,17 @@
 import contextlib
 import io
+from threading import Event
+from time import monotonic
 
 import pytest
 
-from smolagents.local_python_executor import BASE_PYTHON_TOOLS, evaluate_python_code
+from smolagents.local_python_executor import (
+    BASE_PYTHON_TOOLS,
+    ExecutionTimeoutError,
+    InterpreterError,
+    evaluate_python_code,
+    timeout,
+)
 
 
 def assert_python_output(code):
@@ -81,7 +89,7 @@ def test_allow_iterables_in_list_augmented_assignment(value):
 
 
 def test_reject_undefined_augmented_assignment_targets():
-    with pytest.raises(Exception, match="not defined"):
+    with pytest.raises(InterpreterError, match="not defined"):
         evaluate_python_code("missing += 1", static_tools=BASE_PYTHON_TOOLS, timeout_seconds=None)
 
 
@@ -100,7 +108,7 @@ def test_bind_function_arguments_with_python_semantics(code):
 
 @pytest.mark.parametrize("call", ["f()", "f(1, 2, 3)", "f(1, a=2)", "f(1, unknown=2)"])
 def test_bind_function_arguments_with_python_semantics_rejects_invalid_calls(call):
-    with pytest.raises(Exception, match="(missing|too many|multiple values|unexpected keyword)"):
+    with pytest.raises(InterpreterError, match="(missing|too many|multiple values|unexpected keyword)"):
         evaluate_python_code(
             "a=99\ndef f(a, b=2):\n    return a\n" + call, static_tools=BASE_PYTHON_TOOLS, timeout_seconds=None
         )
@@ -119,7 +127,7 @@ def test_bind_lambda_arguments_with_python_semantics(code):
 
 
 def test_bind_lambda_arguments_with_python_semantics_rejects_missing():
-    with pytest.raises(Exception, match="missing"):
+    with pytest.raises(InterpreterError, match="missing"):
         evaluate_python_code("a=9\nf=lambda a: a\nf()", static_tools=BASE_PYTHON_TOOLS, timeout_seconds=None)
 
 
@@ -156,7 +164,7 @@ def test_respect_print_options_and_streams():
 
 
 def test_respect_print_options_and_streams_validates_options():
-    with pytest.raises(Exception, match="sep must be None or a string"):
+    with pytest.raises(InterpreterError, match="sep must be None or a string"):
         evaluate_python_code("print(1, sep=3)", static_tools=BASE_PYTHON_TOOLS, timeout_seconds=None)
 
 
@@ -196,13 +204,13 @@ def test_resolve_dotted_imports_to_their_root_module():
 
 
 def test_do_not_replace_undefined_names_with_similar_variables():
-    with pytest.raises(Exception, match="not defined"):
+    with pytest.raises(InterpreterError, match="not defined"):
         evaluate_python_code("value = 1\nprint(valeu)", static_tools=BASE_PYTHON_TOOLS, timeout_seconds=None)
 
 
 @pytest.mark.parametrize("call", ['f(a=1, **{"a": 2})', 'f(**{"a": 1}, **{"a": 2})', 'f(**{"a": 1}, a=2)'])
 def test_reject_duplicate_keywords_during_call_unpacking(call):
-    with pytest.raises(Exception, match="multiple values"):
+    with pytest.raises(InterpreterError, match="multiple values"):
         evaluate_python_code(
             "def f(**kwargs):\n    return kwargs\n" + call, static_tools=BASE_PYTHON_TOOLS, timeout_seconds=None
         )
@@ -316,10 +324,6 @@ def test_preserve_native_exceptions_for_index_operations(operation):
 
 
 def test_return_at_the_configured_execution_timeout():
-    from threading import Event
-    from time import monotonic
-    from smolagents.local_python_executor import ExecutionTimeoutError, timeout
-
     release = Event()
     finished = Event()
 

@@ -25,8 +25,8 @@ import re
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Generator, Mapping
 from concurrent.futures import ThreadPoolExecutor
-from contextlib import ExitStack
 from concurrent.futures import TimeoutError as FuturesTimeoutError
+from contextlib import ExitStack
 from dataclasses import dataclass
 from functools import wraps
 from importlib import import_module
@@ -945,7 +945,7 @@ def evaluate_call(
             return super(cls, instance)
         else:
             raise InterpreterError("super() takes at most 2 arguments")
-    elif inspect.unwrap(func) is custom_print:
+    elif inspect.unwrap(func) is custom_print or inspect.unwrap(func) is print:
         output_file = kwargs.get("file")
         if output_file is not None:
             print(*args, **kwargs)
@@ -979,7 +979,16 @@ def evaluate_subscript(
 ) -> Any:
     value = evaluate_ast(subscript.value, state, static_tools, custom_tools, authorized_imports)
     index = evaluate_ast(subscript.slice, state, static_tools, custom_tools, authorized_imports)
-    return value[index]
+    try:
+        return value[index]
+    except (KeyError, IndexError, TypeError) as error:
+        context = f"Could not index {value} with '{index}'"
+        if isinstance(index, str) and isinstance(value, Mapping):
+            close_matches = difflib.get_close_matches(index, list(value.keys()))
+            if close_matches:
+                context += f". Maybe you meant one of these indexes instead: {close_matches}"
+        error._smolagents_context = context
+        raise
 
 
 def evaluate_name(
@@ -1466,14 +1475,12 @@ def _evaluate_elements(
     static_tools: dict[str, Callable],
     custom_tools: dict[str, Callable],
     authorized_imports: list[str],
-) -> list[Any]:
-    result = []
+) -> Generator[Any, None, None]:
     for element in elements:
         if isinstance(element, ast.Starred):
-            result.extend(evaluate_ast(element.value, state, static_tools, custom_tools, authorized_imports))
+            yield from evaluate_ast(element.value, state, static_tools, custom_tools, authorized_imports)
         else:
-            result.append(evaluate_ast(element, state, static_tools, custom_tools, authorized_imports))
-    return result
+            yield evaluate_ast(element, state, static_tools, custom_tools, authorized_imports)
 
 
 @safer_eval
@@ -1593,7 +1600,7 @@ def evaluate_ast(
         return "".join([str(evaluate_ast(v, *common_params)) for v in expression.values])
     elif isinstance(expression, ast.List):
         # List -> evaluate all elements
-        return _evaluate_elements(expression.elts, *common_params)
+        return list(_evaluate_elements(expression.elts, *common_params))
     elif isinstance(expression, ast.Name):
         # Name -> pick up the value in the state
         return evaluate_name(expression, *common_params)
@@ -1730,6 +1737,7 @@ def evaluate_python_code(
             )
             raise InterpreterError(
                 f"Code execution failed at line '{ast.get_source_segment(code, node)}' due to: {type(e).__name__}: {e}"
+                + (f". {e._smolagents_context}" if hasattr(e, "_smolagents_context") else "")
             )
 
     # Apply timeout if specified
