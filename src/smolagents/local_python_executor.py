@@ -67,9 +67,14 @@ def custom_print(*args):
     return None
 
 
-def nodunder_getattr(obj, name, default=None):
+_MISSING_ATTRIBUTE_DEFAULT = object()
+
+
+def nodunder_getattr(obj, name, default=_MISSING_ATTRIBUTE_DEFAULT):
     if name.startswith("__") and name.endswith("__"):
         raise InterpreterError(f"Forbidden access to dunder attribute: {name}")
+    if default is _MISSING_ATTRIBUTE_DEFAULT:
+        return getattr(obj, name)
     return getattr(obj, name, default)
 
 
