@@ -509,7 +509,7 @@ def create_function(
         result = None
         try:
             for stmt in func_def.body:
-                result = evaluate_ast(stmt, func_state, static_tools, custom_tools, authorized_imports)
+                evaluate_ast(stmt, func_state, static_tools, custom_tools, authorized_imports)
         except ReturnException as e:
             result = e.value
 

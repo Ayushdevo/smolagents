@@ -18,3 +18,8 @@ def assert_python_output(code):
 @pytest.mark.parametrize("conversion", ["s", "r", "a"])
 def test_honor_fstring_conversions(conversion):
     assert_python_output("value = 'café'\nprint(f'{value!" + conversion + ":>12}')")
+
+
+@pytest.mark.parametrize("body", ["value = 7", "7", "if True:\n        7"])
+def test_return_none_without_explicit_return(body):
+    assert_python_output("def calculate():\n    " + body + "\nprint(calculate())")
