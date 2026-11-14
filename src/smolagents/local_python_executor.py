@@ -546,6 +546,7 @@ def evaluate_function_def(
     function = create_function(func_def, state, static_tools, custom_tools, authorized_imports)
     for decorator in reversed(decorators):
         function = decorator(function)
+    state[func_def.name] = function
     custom_tools[func_def.name] = function
     return function
 

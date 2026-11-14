@@ -264,3 +264,7 @@ def test_evaluate_augmented_assignment_targets_once():
     assert_python_output(
         'events=[]\nitems=[[1]]\ndef select():\n    events.append("object")\n    return items\ndef index():\n    events.append("key")\n    return 0\nselect()[index()] += [2]\nprint(items, events)'
     )
+
+
+def test_bind_function_definitions_in_the_active_namespace():
+    assert_python_output("value = 1\ndef value():\n    return 7\nprint(value())")
