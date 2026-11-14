@@ -1020,9 +1020,8 @@ def evaluate_condition(
         else:
             raise InterpreterError(f"Unsupported comparison operator: {op}")
 
-        if current_result is False:
-            return False
-        result = current_result if i == 0 else (result and current_result)
+        if i == len(condition.ops) - 1 or not current_result:
+            return current_result
         left = right
     return result
 

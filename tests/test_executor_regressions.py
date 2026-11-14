@@ -224,3 +224,9 @@ def test_skip_truth_testing_the_final_boolean_operand(op):
         + op
         + " Value())"
     )
+
+
+def test_short_circuit_chained_comparisons_using_truth_values():
+    assert_python_output(
+        'class Result:\n    def __bool__(self):\n        print("truth")\n        return False\n    def __str__(self):\n        return "result"\nclass Value:\n    def __lt__(self, other):\n        print("compare")\n        return Result()\nprint(Value() < Value() < Value())'
+    )
