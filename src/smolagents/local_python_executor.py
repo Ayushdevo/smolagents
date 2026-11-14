@@ -519,9 +519,10 @@ def create_function(
                 func_state["__class__"] = args[0].__class__
 
         result = None
+        local_tools = custom_tools.copy()
         try:
             for stmt in func_def.body:
-                evaluate_ast(stmt, func_state, static_tools, custom_tools, authorized_imports)
+                evaluate_ast(stmt, func_state, static_tools, local_tools, authorized_imports)
         except ReturnException as e:
             result = e.value
 

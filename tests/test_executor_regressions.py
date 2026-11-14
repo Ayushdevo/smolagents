@@ -302,3 +302,9 @@ def test_delete_nested_assignment_target_sequences():
     assert_python_output(
         'a=1\nb=2\ndel (a, [b])\ntry:\n    print(a)\nexcept Exception:\n    print("a missing")\ntry:\n    print(b)\nexcept Exception:\n    print("b missing")'
     )
+
+
+def test_keep_nested_function_definitions_local_to_the_call():
+    assert_python_output(
+        'def outer():\n    def inner():\n        return 3\n    return inner()\nprint(outer())\ntry:\n    inner()\nexcept Exception:\n    print("not global")'
+    )
