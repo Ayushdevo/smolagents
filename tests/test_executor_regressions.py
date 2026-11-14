@@ -284,3 +284,9 @@ def test_isolate_class_namespaces_and_method_globals():
     assert_python_output(
         'x=1\nclass Value:\n    x=2\n    y=x+3\n    def method(self):\n        return x\nprint(Value.y, Value().method())\ntry:\n    method\nexcept Exception:\n    print("no leaked method")'
     )
+
+
+def test_resolve_print_aliases_without_hijacking_methods():
+    assert_python_output(
+        'write = print\nwrite("alias")\nclass Printer:\n    def print(self, value):\n        return "method:" + value\nprint(Printer().print("ok"))'
+    )

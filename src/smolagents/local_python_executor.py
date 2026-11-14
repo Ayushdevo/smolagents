@@ -940,7 +940,7 @@ def evaluate_call(
             return super(cls, instance)
         else:
             raise InterpreterError("super() takes at most 2 arguments")
-    elif func_name == "print":
+    elif inspect.unwrap(func) is custom_print:
         output_file = kwargs.get("file")
         if output_file is not None:
             print(*args, **kwargs)
