@@ -236,3 +236,9 @@ def test_apply_function_decorators():
     assert_python_output(
         'events=[]\ndef decorate(label):\n    events.append(label)\n    def apply(fn):\n        def wrapped():\n            return label + fn()\n        return wrapped\n    return apply\n@decorate("a")\n@decorate("b")\ndef value():\n    return "c"\nprint(value(), events)'
     )
+
+
+def test_apply_class_decorators():
+    assert_python_output(
+        'def decorate(cls):\n    cls.tag = "decorated"\n    return cls\n@decorate\nclass Value:\n    pass\nprint(Value.tag)'
+    )

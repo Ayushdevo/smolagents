@@ -556,6 +556,9 @@ def evaluate_class_def(
     custom_tools: dict[str, Callable],
     authorized_imports: list[str],
 ) -> type:
+    decorators = [
+        evaluate_ast(node, state, static_tools, custom_tools, authorized_imports) for node in class_def.decorator_list
+    ]
     class_name = class_def.name
     bases = [evaluate_ast(base, state, static_tools, custom_tools, authorized_imports) for base in class_def.bases]
 
@@ -626,6 +629,8 @@ def evaluate_class_def(
             raise InterpreterError(f"Unsupported statement in class body: {stmt.__class__.__name__}")
 
     new_class = metaclass(class_name, tuple(bases), class_dict)
+    for decorator in reversed(decorators):
+        new_class = decorator(new_class)
     state[class_name] = new_class
     return new_class
 
