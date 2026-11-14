@@ -420,19 +420,14 @@ def evaluate_lambda(
     custom_tools: dict[str, Callable],
     authorized_imports: list[str],
 ) -> Callable:
-    args = [arg.arg for arg in lambda_expression.args.args]
+    signature = _function_signature(lambda_expression.args, state, static_tools, custom_tools, authorized_imports)
 
-    def lambda_func(*values: Any) -> Any:
+    def lambda_func(*values: Any, **kwargs: Any) -> Any:
+        bound = signature.bind(*values, **kwargs)
+        bound.apply_defaults()
         new_state = state.copy()
-        for arg, value in zip(args, values):
-            new_state[arg] = value
-        return evaluate_ast(
-            lambda_expression.body,
-            new_state,
-            static_tools,
-            custom_tools,
-            authorized_imports,
-        )
+        new_state.update(bound.arguments)
+        return evaluate_ast(lambda_expression.body, new_state, static_tools, custom_tools, authorized_imports)
 
     return lambda_func
 

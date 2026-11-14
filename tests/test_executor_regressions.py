@@ -104,3 +104,20 @@ def test_bind_function_arguments_with_python_semantics_rejects_invalid_calls(cal
         evaluate_python_code(
             "a=99\ndef f(a, b=2):\n    return a\n" + call, static_tools=BASE_PYTHON_TOOLS, timeout_seconds=None
         )
+
+
+@pytest.mark.parametrize(
+    "code",
+    [
+        "f = lambda a, /, b=2, *rest, c=3, **extra: [a, b, rest, c, extra]\nprint(f(1, 4, 5, c=6, other=7))",
+        "x=4\nf = lambda a=x: a\nx=9\nprint(f())",
+        "f = lambda a: a\nprint(f(a=8))",
+    ],
+)
+def test_bind_lambda_arguments_with_python_semantics(code):
+    assert_python_output(code)
+
+
+def test_bind_lambda_arguments_with_python_semantics_rejects_missing():
+    with pytest.raises(Exception, match="missing"):
+        evaluate_python_code("a=9\nf=lambda a: a\nf()", static_tools=BASE_PYTHON_TOOLS, timeout_seconds=None)
