@@ -317,7 +317,7 @@ def timeout(timeout_seconds: int):
                 try:
                     return future.result(timeout=timeout_seconds)
                 except FuturesTimeoutError as error:
-                    if future.done():
+                    if future.done() and future.exception() is error:
                         raise
                     raise ExecutionTimeoutError(
                         f"Code execution exceeded the maximum execution time of {timeout_seconds} seconds"

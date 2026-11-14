@@ -353,3 +353,32 @@ def test_respect_explicit_exception_context_suppression():
         timeout_seconds=None,
     )
     assert str(state["_print_outputs"]) == "True\n"
+
+
+def test_distinguish_worker_timeouts_from_wait_expiration(monkeypatch):
+    from unittest.mock import Mock
+
+    from smolagents import local_python_executor
+
+    # The worker completes after Future.result has already reached its wait deadline.
+    future = Mock()
+    future.result.side_effect = TimeoutError("wait expired")
+    future.done.return_value = True
+    future.exception.return_value = None
+    pool = Mock()
+    pool.submit.return_value = future
+    monkeypatch.setattr(local_python_executor, "ThreadPoolExecutor", lambda **kwargs: pool)
+    with pytest.raises(ExecutionTimeoutError):
+        timeout(1)(lambda: None)()
+
+
+def test_distinguish_worker_timeouts_from_wait_expiration_keeps_tool_exception():
+    failure = TimeoutError("tool timed out")
+
+    @timeout(1)
+    def fail():
+        raise failure
+
+    with pytest.raises(TimeoutError) as caught:
+        fail()
+    assert caught.value is failure
