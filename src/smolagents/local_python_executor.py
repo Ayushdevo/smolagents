@@ -1196,8 +1196,12 @@ def evaluate_try(
                 matched = True
                 if handler.name:
                     state[handler.name] = e
-                for stmt in handler.body:
-                    evaluate_ast(stmt, state, static_tools, custom_tools, authorized_imports)
+                try:
+                    for stmt in handler.body:
+                        evaluate_ast(stmt, state, static_tools, custom_tools, authorized_imports)
+                finally:
+                    if handler.name:
+                        state.pop(handler.name, None)
                 break
         if not matched:
             raise e

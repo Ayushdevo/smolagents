@@ -143,3 +143,9 @@ def test_unpack_assignment_targets_as_python_sequences(assignment):
 
 def test_unpack_assignment_targets_as_python_sequences_keeps_starred_values():
     assert_python_output("a, *middle, b = range(5)\nprint(a, middle, b)")
+
+
+def test_clear_except_handler_bindings():
+    assert_python_output(
+        'error = "old"\ntry:\n    raise ValueError("failure")\nexcept ValueError as error:\n    print(str(error))\ntry:\n    print(error)\nexcept Exception:\n    print("unbound")'
+    )
