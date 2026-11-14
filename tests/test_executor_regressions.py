@@ -278,3 +278,9 @@ def test_raise_attributeerror_when_getattr_has_no_default():
     assert_python_output(
         'try:\n    getattr(1, "missing")\nexcept AttributeError:\n    print("missing")\nprint(getattr(1, "missing", None))'
     )
+
+
+def test_isolate_class_namespaces_and_method_globals():
+    assert_python_output(
+        'x=1\nclass Value:\n    x=2\n    y=x+3\n    def method(self):\n        return x\nprint(Value.y, Value().method())\ntry:\n    method\nexcept Exception:\n    print("no leaked method")'
+    )

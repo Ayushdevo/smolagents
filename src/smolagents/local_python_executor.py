@@ -584,43 +584,51 @@ def evaluate_class_def(
     else:
         class_dict = {}
 
+    class_state = state.copy()
     for stmt in class_def.body:
         if isinstance(stmt, ast.FunctionDef):
-            class_dict[stmt.name] = evaluate_ast(stmt, state, static_tools, custom_tools, authorized_imports)
+            method_decorators = [
+                evaluate_ast(node, class_state, static_tools, custom_tools, authorized_imports)
+                for node in stmt.decorator_list
+            ]
+            method = create_function(stmt, state, static_tools, custom_tools, authorized_imports)
+            for decorator in reversed(method_decorators):
+                method = decorator(method)
+            class_dict[stmt.name] = method
         elif isinstance(stmt, ast.AnnAssign):
             if stmt.value:
-                value = evaluate_ast(stmt.value, state, static_tools, custom_tools, authorized_imports)
+                value = evaluate_ast(stmt.value, class_state, static_tools, custom_tools, authorized_imports)
             target = stmt.target
             # Handle target types for annotation
             if isinstance(target, ast.Name):
                 # Simple variable annotation like "x: int"
-                annotation = evaluate_ast(stmt.annotation, state, static_tools, custom_tools, authorized_imports)
+                annotation = evaluate_ast(stmt.annotation, class_state, static_tools, custom_tools, authorized_imports)
                 class_dict.setdefault("__annotations__", {})[target.id] = annotation
                 # Assign value if provided
                 if stmt.value:
                     class_dict[target.id] = value
             elif isinstance(target, ast.Attribute):
                 # Attribute annotation like "obj.attr: int"
-                obj = evaluate_ast(target.value, class_dict, static_tools, custom_tools, authorized_imports)
+                obj = evaluate_ast(target.value, class_state, static_tools, custom_tools, authorized_imports)
                 # If there's a value assignment, set the attribute
                 if stmt.value:
                     setattr(obj, target.attr, value)
             elif isinstance(target, ast.Subscript):
                 # Subscript annotation like "dict[key]: int"
-                container = evaluate_ast(target.value, class_dict, static_tools, custom_tools, authorized_imports)
-                index = evaluate_ast(target.slice, state, static_tools, custom_tools, authorized_imports)
+                container = evaluate_ast(target.value, class_state, static_tools, custom_tools, authorized_imports)
+                index = evaluate_ast(target.slice, class_state, static_tools, custom_tools, authorized_imports)
                 # If there's a value assignment, set the item
                 if stmt.value:
                     container[index] = value
             else:
                 raise InterpreterError(f"Unsupported AnnAssign target in class body: {type(target).__name__}")
         elif isinstance(stmt, ast.Assign):
-            value = evaluate_ast(stmt.value, state, static_tools, custom_tools, authorized_imports)
+            value = evaluate_ast(stmt.value, class_state, static_tools, custom_tools, authorized_imports)
             for target in stmt.targets:
                 if isinstance(target, ast.Name):
                     class_dict[target.id] = value
                 elif isinstance(target, ast.Attribute):
-                    obj = evaluate_ast(target.value, class_dict, static_tools, custom_tools, authorized_imports)
+                    obj = evaluate_ast(target.value, class_state, static_tools, custom_tools, authorized_imports)
                     setattr(obj, target.attr, value)
         elif isinstance(stmt, ast.Pass):
             pass
@@ -634,6 +642,8 @@ def evaluate_class_def(
             class_dict["__doc__"] = stmt.value.value
         else:
             raise InterpreterError(f"Unsupported statement in class body: {stmt.__class__.__name__}")
+
+        class_state.update(class_dict)
 
     new_class = metaclass(class_name, tuple(bases), class_dict)
     for decorator in reversed(decorators):
