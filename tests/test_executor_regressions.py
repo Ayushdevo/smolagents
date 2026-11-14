@@ -42,3 +42,12 @@ def test_execute_for_else_without_break(items):
 
 def test_execute_for_else_without_break_respects_break():
     assert_python_output('for item in [1, 2]:\n    break\nelse:\n    print("complete")')
+
+
+@pytest.mark.parametrize("initial", [0, 2])
+def test_execute_while_else_without_break(initial):
+    assert_python_output("n = " + str(initial) + '\nwhile n:\n    n -= 1\nelse:\n    print("complete")')
+
+
+def test_execute_while_else_without_break_respects_break():
+    assert_python_output('while True:\n    break\nelse:\n    print("complete")')
