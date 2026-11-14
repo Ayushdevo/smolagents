@@ -73,3 +73,8 @@ def test_delete_object_attributes():
     assert_python_output(
         'class Box:\n    pass\nbox = Box()\nbox.value = 3\ndel box.value\nprint(hasattr(box, "value"))'
     )
+
+
+@pytest.mark.parametrize("value", ["(2, 3)", "range(2, 4)", "'bc'"])
+def test_allow_iterables_in_list_augmented_assignment(value):
+    assert_python_output("items = [1]\nalias = items\nitems += " + value + "\nprint(items, alias is items)")

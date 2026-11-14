@@ -665,12 +665,7 @@ def evaluate_augassign(
     value_to_add = evaluate_ast(expression.value, state, static_tools, custom_tools, authorized_imports)
 
     if isinstance(expression.op, ast.Add):
-        if isinstance(current_value, list):
-            if not isinstance(value_to_add, list):
-                raise InterpreterError(f"Cannot add non-list value {value_to_add} to a list.")
-            current_value += value_to_add
-        else:
-            current_value += value_to_add
+        current_value += value_to_add
     elif isinstance(expression.op, ast.Sub):
         current_value -= value_to_add
     elif isinstance(expression.op, ast.Mult):
