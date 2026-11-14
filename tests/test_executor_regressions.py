@@ -23,3 +23,13 @@ def test_honor_fstring_conversions(conversion):
 @pytest.mark.parametrize("body", ["value = 7", "7", "if True:\n        7"])
 def test_return_none_without_explicit_return(body):
     assert_python_output("def calculate():\n    " + body + "\nprint(calculate())")
+
+
+def test_evaluate_dictionary_entries_in_order():
+    assert_python_output(
+        "events = []\ndef record(x):\n    events.append(x)\n    return x\nvalue = {record('k1'): record('v1'), record('k2'): record('v2')}\nprint(events)"
+    )
+
+
+def test_evaluate_dictionary_entries_in_order_with_unpacking():
+    assert_python_output("first = {'a': 1, 'b': 2}\nprint({**first, 'b': 3, **{'c': 4}})")
