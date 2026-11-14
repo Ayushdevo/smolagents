@@ -1259,7 +1259,7 @@ def evaluate_raise(
     else:
         cause = None
     if exc is not None:
-        if cause is not None:
+        if raise_node.cause is not None:
             raise exc from cause
         else:
             raise exc

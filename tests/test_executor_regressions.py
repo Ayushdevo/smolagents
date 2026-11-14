@@ -338,3 +338,14 @@ def test_return_at_the_configured_execution_timeout():
     finally:
         release.set()
         assert finished.wait(1)
+
+
+def test_respect_explicit_exception_context_suppression():
+    state = {}
+    evaluate_python_code(
+        'try:\n    try:\n        raise KeyError("first")\n    except KeyError:\n        raise ValueError("second") from None\nexcept ValueError as error:\n    print(suppressed(error))',
+        static_tools={**BASE_PYTHON_TOOLS, "suppressed": lambda error: error.__suppress_context__},
+        state=state,
+        timeout_seconds=None,
+    )
+    assert str(state["_print_outputs"]) == "True\n"
