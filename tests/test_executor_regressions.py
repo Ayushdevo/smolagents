@@ -308,3 +308,8 @@ def test_keep_nested_function_definitions_local_to_the_call():
     assert_python_output(
         'def outer():\n    def inner():\n        return 3\n    return inner()\nprint(outer())\ntry:\n    inner()\nexcept Exception:\n    print("not global")'
     )
+
+
+@pytest.mark.parametrize("operation", ['items["missing"]', 'del items["missing"]'])
+def test_preserve_native_exceptions_for_index_operations(operation):
+    assert_python_output("items={}\ntry:\n    " + operation + "\nexcept KeyError as error:\n    print(str(error))")
