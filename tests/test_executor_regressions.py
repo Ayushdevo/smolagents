@@ -158,3 +158,14 @@ def test_respect_print_options_and_streams():
 def test_respect_print_options_and_streams_validates_options():
     with pytest.raises(Exception, match="sep must be None or a string"):
         evaluate_python_code("print(1, sep=3)", static_tools=BASE_PYTHON_TOOLS, timeout_seconds=None)
+
+
+@pytest.mark.parametrize(
+    "expression",
+    [
+        "[lambda: i for i in range(3)]",
+        "[value for i in range(2) for value in [lambda: i]]",
+    ],
+)
+def test_share_comprehension_scope_across_iterations(expression):
+    assert_python_output("i = 99\nfuncs = " + expression + "\nprint([f() for f in funcs], i)")

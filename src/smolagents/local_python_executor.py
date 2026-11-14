@@ -1107,8 +1107,8 @@ def _evaluate_comprehensions(
     # Evaluate first comprehension
     comprehension = comprehensions[0]
     iter_value = evaluate_ast(comprehension.iter, state, static_tools, custom_tools, authorized_imports)
+    new_state = state
     for value in iter_value:
-        new_state = state.copy()
         set_value(comprehension.target, value, new_state, static_tools, custom_tools, authorized_imports)
         # Check all filter conditions
         if all(
@@ -1132,7 +1132,7 @@ def evaluate_listcomp(
         _evaluate_comprehensions(
             listcomp.generators,
             lambda comp_state: evaluate_ast(listcomp.elt, comp_state, static_tools, custom_tools, authorized_imports),
-            state,
+            state.copy(),
             static_tools,
             custom_tools,
             authorized_imports,
@@ -1151,7 +1151,7 @@ def evaluate_setcomp(
         _evaluate_comprehensions(
             setcomp.generators,
             lambda comp_state: evaluate_ast(setcomp.elt, comp_state, static_tools, custom_tools, authorized_imports),
-            state,
+            state.copy(),
             static_tools,
             custom_tools,
             authorized_imports,
@@ -1173,7 +1173,7 @@ def evaluate_dictcomp(
                 evaluate_ast(dictcomp.key, comp_state, static_tools, custom_tools, authorized_imports),
                 evaluate_ast(dictcomp.value, comp_state, static_tools, custom_tools, authorized_imports),
             ),
-            state,
+            state.copy(),
             static_tools,
             custom_tools,
             authorized_imports,
