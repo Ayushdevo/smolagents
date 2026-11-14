@@ -290,3 +290,9 @@ def test_resolve_print_aliases_without_hijacking_methods():
     assert_python_output(
         'write = print\nwrite("alias")\nclass Printer:\n    def print(self, value):\n        return "method:" + value\nprint(Printer().print("ok"))'
     )
+
+
+def test_evaluate_subscript_objects_before_indices():
+    assert_python_output(
+        'events=[]\ndef collection():\n    events.append("object")\n    return [9]\ndef index():\n    events.append("index")\n    return 0\nprint(collection()[index()], events)'
+    )
