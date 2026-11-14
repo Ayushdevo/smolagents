@@ -805,16 +805,28 @@ def set_value(
         if target.id in static_tools:
             raise InterpreterError(f"Cannot assign to name '{target.id}': doing this would erase the existing tool!")
         state[target.id] = value
-    elif isinstance(target, ast.Tuple):
-        if not isinstance(value, tuple):
-            if hasattr(value, "__iter__") and not isinstance(value, (str, bytes)):
-                value = tuple(value)
-            else:
-                raise InterpreterError("Cannot unpack non-tuple value")
-        if len(target.elts) != len(value):
-            raise InterpreterError("Cannot unpack tuple of wrong size")
-        for i, elem in enumerate(target.elts):
-            set_value(elem, value[i], state, static_tools, custom_tools, authorized_imports)
+    elif isinstance(target, (ast.Tuple, ast.List)):
+        values = list(value)
+        starred = [index for index, element in enumerate(target.elts) if isinstance(element, ast.Starred)]
+        if not starred:
+            if len(values) != len(target.elts):
+                raise ValueError("Cannot unpack sequence of wrong size")
+        else:
+            star_index = starred[0]
+            trailing = len(target.elts) - star_index - 1
+            if len(values) < len(target.elts) - 1:
+                raise ValueError("Not enough values to unpack")
+            end = len(values) - trailing
+            values = values[:star_index] + [values[star_index:end]] + values[end:]
+        for element, item in zip(target.elts, values):
+            set_value(
+                element.value if isinstance(element, ast.Starred) else element,
+                item,
+                state,
+                static_tools,
+                custom_tools,
+                authorized_imports,
+            )
     elif isinstance(target, ast.Subscript):
         obj = evaluate_ast(target.value, state, static_tools, custom_tools, authorized_imports)
         key = evaluate_ast(target.slice, state, static_tools, custom_tools, authorized_imports)

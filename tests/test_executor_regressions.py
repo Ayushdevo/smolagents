@@ -126,3 +126,20 @@ def test_bind_lambda_arguments_with_python_semantics_rejects_missing():
 @pytest.mark.parametrize("expression", ["[0, *items, 3]", "(0, *items, 3)", "{0, *items, 3}"])
 def test_expand_starred_collection_elements(expression):
     assert_python_output("items = [1, 2]\nprint(" + expression + ")")
+
+
+@pytest.mark.parametrize(
+    "assignment",
+    [
+        'a, b = "hi"',
+        "[a, b] = (1, 2)",
+        "a, *middle, b = range(5)",
+        "(a, [b, *rest]) = (1, [2, 3, 4])",
+    ],
+)
+def test_unpack_assignment_targets_as_python_sequences(assignment):
+    assert_python_output(assignment + "\nprint(a, b)")
+
+
+def test_unpack_assignment_targets_as_python_sequences_keeps_starred_values():
+    assert_python_output("a, *middle, b = range(5)\nprint(a, middle, b)")
