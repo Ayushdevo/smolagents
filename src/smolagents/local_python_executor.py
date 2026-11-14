@@ -891,9 +891,9 @@ def evaluate_call(
         if keyword.arg is None:
             # **kwargs unpacking
             starred_dict = evaluate_ast(keyword.value, state, static_tools, custom_tools, authorized_imports)
-            if not isinstance(starred_dict, dict):
-                raise InterpreterError(f"Cannot unpack non-dict value in **kwargs: {type(starred_dict).__name__}")
-            for name in starred_dict:
+            if not hasattr(starred_dict, "keys"):
+                raise TypeError(f"Cannot unpack non-mapping value in **kwargs: {type(starred_dict).__name__}")
+            for name in starred_dict.keys():
                 if name in kwargs:
                     raise TypeError(f"Got multiple values for keyword argument '{name}'")
                 kwargs[name] = starred_dict[name]

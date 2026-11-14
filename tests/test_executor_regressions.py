@@ -206,3 +206,9 @@ def test_reject_duplicate_keywords_during_call_unpacking(call):
         evaluate_python_code(
             "def f(**kwargs):\n    return kwargs\n" + call, static_tools=BASE_PYTHON_TOOLS, timeout_seconds=None
         )
+
+
+def test_accept_mapping_objects_in_call_unpacking():
+    assert_python_output(
+        'class Arguments:\n    def keys(self):\n        return ["a"]\n    def __getitem__(self, key):\n        return 7\ndef f(a):\n    return a\nprint(f(**Arguments()))'
+    )
