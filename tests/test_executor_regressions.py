@@ -121,3 +121,8 @@ def test_bind_lambda_arguments_with_python_semantics(code):
 def test_bind_lambda_arguments_with_python_semantics_rejects_missing():
     with pytest.raises(Exception, match="missing"):
         evaluate_python_code("a=9\nf=lambda a: a\nf()", static_tools=BASE_PYTHON_TOOLS, timeout_seconds=None)
+
+
+@pytest.mark.parametrize("expression", ["[0, *items, 3]", "(0, *items, 3)", "{0, *items, 3}"])
+def test_expand_starred_collection_elements(expression):
+    assert_python_output("items = [1, 2]\nprint(" + expression + ")")
