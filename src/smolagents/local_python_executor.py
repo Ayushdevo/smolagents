@@ -1499,7 +1499,11 @@ def evaluate_ast(
         )
     state["_operations_count"]["counter"] += 1
     common_params = (state, static_tools, custom_tools, authorized_imports)
-    if isinstance(expression, ast.Assign):
+    if isinstance(expression, ast.NamedExpr):
+        value = evaluate_ast(expression.value, *common_params)
+        set_value(expression.target, value, *common_params)
+        return value
+    elif isinstance(expression, ast.Assign):
         # Assignment -> we evaluate the assignment which should update the state
         # We return the variable assigned as it may be used to determine the final result.
         return evaluate_assign(expression, *common_params)

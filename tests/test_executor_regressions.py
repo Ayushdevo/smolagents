@@ -268,3 +268,7 @@ def test_evaluate_augmented_assignment_targets_once():
 
 def test_bind_function_definitions_in_the_active_namespace():
     assert_python_output("value = 1\ndef value():\n    return 7\nprint(value())")
+
+
+def test_support_assignment_expressions():
+    assert_python_output("if (count := 3):\n    print(count)\nprint((count := count + 1))")
