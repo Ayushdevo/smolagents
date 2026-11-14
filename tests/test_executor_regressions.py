@@ -181,3 +181,15 @@ def test_share_comprehension_scope_across_iterations(expression):
 )
 def test_evaluate_nested_generators_and_capture_outer_iterator(code):
     assert_python_output(code)
+
+
+def test_resolve_dotted_imports_to_their_root_module():
+    state = {}
+    evaluate_python_code(
+        "import collections.abc\nprint(isinstance({}, collections.abc.Mapping))",
+        static_tools=BASE_PYTHON_TOOLS,
+        state=state,
+        authorized_imports=["collections.abc"],
+        timeout_seconds=None,
+    )
+    assert str(state["_print_outputs"]) == "True\n"
