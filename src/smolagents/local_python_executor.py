@@ -893,10 +893,16 @@ def evaluate_call(
             starred_dict = evaluate_ast(keyword.value, state, static_tools, custom_tools, authorized_imports)
             if not isinstance(starred_dict, dict):
                 raise InterpreterError(f"Cannot unpack non-dict value in **kwargs: {type(starred_dict).__name__}")
-            kwargs.update(starred_dict)
+            for name in starred_dict:
+                if name in kwargs:
+                    raise TypeError(f"Got multiple values for keyword argument '{name}'")
+                kwargs[name] = starred_dict[name]
         else:
             # Normal keyword argument
-            kwargs[keyword.arg] = evaluate_ast(keyword.value, state, static_tools, custom_tools, authorized_imports)
+            value = evaluate_ast(keyword.value, state, static_tools, custom_tools, authorized_imports)
+            if keyword.arg in kwargs:
+                raise TypeError(f"Got multiple values for keyword argument '{keyword.arg}'")
+            kwargs[keyword.arg] = value
 
     if func_name == "super":
         if not args:

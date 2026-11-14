@@ -198,3 +198,11 @@ def test_resolve_dotted_imports_to_their_root_module():
 def test_do_not_replace_undefined_names_with_similar_variables():
     with pytest.raises(Exception, match="not defined"):
         evaluate_python_code("value = 1\nprint(valeu)", static_tools=BASE_PYTHON_TOOLS, timeout_seconds=None)
+
+
+@pytest.mark.parametrize("call", ['f(a=1, **{"a": 2})', 'f(**{"a": 1}, **{"a": 2})', 'f(**{"a": 1}, a=2)'])
+def test_reject_duplicate_keywords_during_call_unpacking(call):
+    with pytest.raises(Exception, match="multiple values"):
+        evaluate_python_code(
+            "def f(**kwargs):\n    return kwargs\n" + call, static_tools=BASE_PYTHON_TOOLS, timeout_seconds=None
+        )
