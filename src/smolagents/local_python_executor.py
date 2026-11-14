@@ -18,6 +18,7 @@ import ast
 import builtins
 import difflib
 import inspect
+import io
 import logging
 import math
 import re
@@ -914,7 +915,13 @@ def evaluate_call(
         else:
             raise InterpreterError("super() takes at most 2 arguments")
     elif func_name == "print":
-        state["_print_outputs"] += " ".join(map(str, args)) + "\n"
+        output_file = kwargs.get("file")
+        if output_file is not None:
+            print(*args, **kwargs)
+        else:
+            buffer = io.StringIO()
+            print(*args, **{**kwargs, "file": buffer})
+            state["_print_outputs"] += buffer.getvalue()
         return None
     else:  # Assume it's a callable object
         if (inspect.getmodule(func) == builtins) and inspect.isbuiltin(func) and (func not in static_tools.values()):

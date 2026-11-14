@@ -149,3 +149,12 @@ def test_clear_except_handler_bindings():
     assert_python_output(
         'error = "old"\ntry:\n    raise ValueError("failure")\nexcept ValueError as error:\n    print(str(error))\ntry:\n    print(error)\nexcept Exception:\n    print("unbound")'
     )
+
+
+def test_respect_print_options_and_streams():
+    assert_python_output('print("a", "b", sep="|", end="!")\nprint("next", sep=None, end=None)')
+
+
+def test_respect_print_options_and_streams_validates_options():
+    with pytest.raises(Exception, match="sep must be None or a string"):
+        evaluate_python_code("print(1, sep=3)", static_tools=BASE_PYTHON_TOOLS, timeout_seconds=None)
