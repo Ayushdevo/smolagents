@@ -212,3 +212,15 @@ def test_accept_mapping_objects_in_call_unpacking():
     assert_python_output(
         'class Arguments:\n    def keys(self):\n        return ["a"]\n    def __getitem__(self, key):\n        return 7\ndef f(a):\n    return a\nprint(f(**Arguments()))'
     )
+
+
+@pytest.mark.parametrize("op", ["and", "or"])
+def test_skip_truth_testing_the_final_boolean_operand(op):
+    first = "True" if op == "and" else "False"
+    assert_python_output(
+        'class Value:\n    def __bool__(self):\n        print("checked")\n        return True\n    def __str__(self):\n        return "value"\nprint('
+        + first
+        + " "
+        + op
+        + " Value())"
+    )

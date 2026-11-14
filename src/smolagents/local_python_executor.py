@@ -721,10 +721,10 @@ def evaluate_boolop(
     # - 'and' returns the first falsy value encountered (or the last value if all are truthy)
     # - 'or' returns the first truthy value encountered (or the last value if all are falsy)
     is_short_circuit_value = (lambda x: not x) if isinstance(node.op, ast.And) else (lambda x: bool(x))
-    for value in node.values:
+    for index, value in enumerate(node.values):
         result = evaluate_ast(value, state, static_tools, custom_tools, authorized_imports)
-        # Short-circuit: return immediately if the condition is met
-        if is_short_circuit_value(result):
+        # The final operand is returned without a truth test.
+        if index == len(node.values) - 1 or is_short_circuit_value(result):
             return result
     # If no short-circuit occurred, return the last evaluated value
     return result
