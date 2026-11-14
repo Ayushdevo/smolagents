@@ -660,26 +660,21 @@ def evaluate_augassign(
     custom_tools: dict[str, Callable],
     authorized_imports: list[str],
 ) -> Any:
-    def get_current_value(target: ast.AST) -> Any:
-        if isinstance(target, ast.Name):
-            if target.id not in state:
-                raise InterpreterError(f"The variable `{target.id}` is not defined.")
-            return state[target.id]
-        elif isinstance(target, ast.Subscript):
-            obj = evaluate_ast(target.value, state, static_tools, custom_tools, authorized_imports)
-            key = evaluate_ast(target.slice, state, static_tools, custom_tools, authorized_imports)
-            return obj[key]
-        elif isinstance(target, ast.Attribute):
-            obj = evaluate_ast(target.value, state, static_tools, custom_tools, authorized_imports)
-            return getattr(obj, target.attr)
-        elif isinstance(target, ast.Tuple):
-            return tuple(get_current_value(elt) for elt in target.elts)
-        elif isinstance(target, ast.List):
-            return [get_current_value(elt) for elt in target.elts]
-        else:
-            raise InterpreterError("AugAssign not supported for {type(target)} targets.")
+    target = expression.target
+    if isinstance(target, ast.Name):
+        if target.id not in state:
+            raise InterpreterError(f"The variable `{target.id}` is not defined.")
+        current_value = state[target.id]
+    elif isinstance(target, ast.Subscript):
+        target_object = evaluate_ast(target.value, state, static_tools, custom_tools, authorized_imports)
+        target_key = evaluate_ast(target.slice, state, static_tools, custom_tools, authorized_imports)
+        current_value = target_object[target_key]
+    elif isinstance(target, ast.Attribute):
+        target_object = evaluate_ast(target.value, state, static_tools, custom_tools, authorized_imports)
+        current_value = getattr(target_object, target.attr)
+    else:
+        raise InterpreterError(f"AugAssign not supported for {type(target).__name__} targets.")
 
-    current_value = get_current_value(expression.target)
     value_to_add = evaluate_ast(expression.value, state, static_tools, custom_tools, authorized_imports)
 
     if isinstance(expression.op, ast.Add):
@@ -709,15 +704,12 @@ def evaluate_augassign(
     else:
         raise InterpreterError(f"Operation {type(expression.op).__name__} is not supported.")
 
-    # Update the state: current_value has been updated in-place
-    set_value(
-        expression.target,
-        current_value,
-        state,
-        static_tools,
-        custom_tools,
-        authorized_imports,
-    )
+    if isinstance(target, ast.Name):
+        set_value(target, current_value, state, static_tools, custom_tools, authorized_imports)
+    elif isinstance(target, ast.Subscript):
+        target_object[target_key] = current_value
+    else:
+        setattr(target_object, target.attr, current_value)
 
     return current_value
 

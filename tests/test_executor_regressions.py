@@ -258,3 +258,9 @@ def test_unwind_context_managers_on_enter_failure_and_control_flow_enter_failure
     assert_python_output(
         'events=[]\nclass Manager:\n    def __enter__(self):\n        return self\n    def __exit__(self, kind, value, tb):\n        events.append("exit")\nclass Broken:\n    def __enter__(self):\n        raise ValueError("enter")\n    def __exit__(self, kind, value, tb):\n        events.append("broken-exit")\ntry:\n    with Manager(), Broken():\n        pass\nexcept ValueError:\n    print(events)'
     )
+
+
+def test_evaluate_augmented_assignment_targets_once():
+    assert_python_output(
+        'events=[]\nitems=[[1]]\ndef select():\n    events.append("object")\n    return items\ndef index():\n    events.append("key")\n    return 0\nselect()[index()] += [2]\nprint(items, events)'
+    )
