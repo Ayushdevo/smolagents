@@ -1172,6 +1172,8 @@ def evaluate_try(
     try:
         for stmt in try_node.body:
             evaluate_ast(stmt, state, static_tools, custom_tools, authorized_imports)
+    except (ReturnException, BreakException, ContinueException):
+        raise
     except Exception as e:
         matched = False
         for handler in try_node.handlers:

@@ -51,3 +51,13 @@ def test_execute_while_else_without_break(initial):
 
 def test_execute_while_else_without_break_respects_break():
     assert_python_output('while True:\n    break\nelse:\n    print("complete")')
+
+
+@pytest.mark.parametrize("statement", ["return 7", "break", "continue"])
+def test_keep_control_flow_out_of_exception_handlers(statement):
+    body = (
+        "def run():\n    for i in [1]:\n        try:\n            "
+        + statement
+        + '\n        except Exception:\n            print("caught")\n        finally:\n            print("finally")\n    return 9\nprint(run())'
+    )
+    assert_python_output(body)
