@@ -1,0 +1,20 @@
+import contextlib
+import io
+
+import pytest
+
+from smolagents.local_python_executor import BASE_PYTHON_TOOLS, evaluate_python_code
+
+
+def assert_python_output(code):
+    expected = io.StringIO()
+    with contextlib.redirect_stdout(expected):
+        exec(compile(code, "<regression>", "exec"), {})
+    state = {}
+    evaluate_python_code(code, static_tools=BASE_PYTHON_TOOLS, state=state, timeout_seconds=None)
+    assert str(state["_print_outputs"]) == expected.getvalue()
+
+
+@pytest.mark.parametrize("conversion", ["s", "r", "a"])
+def test_honor_fstring_conversions(conversion):
+    assert_python_output("value = 'café'\nprint(f'{value!" + conversion + ":>12}')")
