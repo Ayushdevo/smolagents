@@ -313,3 +313,28 @@ def test_keep_nested_function_definitions_local_to_the_call():
 @pytest.mark.parametrize("operation", ['items["missing"]', 'del items["missing"]'])
 def test_preserve_native_exceptions_for_index_operations(operation):
     assert_python_output("items={}\ntry:\n    " + operation + "\nexcept KeyError as error:\n    print(str(error))")
+
+
+def test_return_at_the_configured_execution_timeout():
+    from threading import Event
+    from time import monotonic
+    from smolagents.local_python_executor import ExecutionTimeoutError, timeout
+
+    release = Event()
+    finished = Event()
+
+    @timeout(0.02)
+    def wait_for_release():
+        try:
+            release.wait(1)
+        finally:
+            finished.set()
+
+    start = monotonic()
+    try:
+        with pytest.raises(ExecutionTimeoutError):
+            wait_for_release()
+        assert monotonic() - start < 0.5
+    finally:
+        release.set()
+        assert finished.wait(1)
