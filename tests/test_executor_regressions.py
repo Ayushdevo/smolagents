@@ -78,3 +78,8 @@ def test_delete_object_attributes():
 @pytest.mark.parametrize("value", ["(2, 3)", "range(2, 4)", "'bc'"])
 def test_allow_iterables_in_list_augmented_assignment(value):
     assert_python_output("items = [1]\nalias = items\nitems += " + value + "\nprint(items, alias is items)")
+
+
+def test_reject_undefined_augmented_assignment_targets():
+    with pytest.raises(Exception, match="not defined"):
+        evaluate_python_code("missing += 1", static_tools=BASE_PYTHON_TOOLS, timeout_seconds=None)
