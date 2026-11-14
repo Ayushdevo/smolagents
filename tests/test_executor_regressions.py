@@ -67,3 +67,9 @@ def test_support_bare_reraise_in_exception_handlers():
     assert_python_output(
         'try:\n    try:\n        raise ValueError("original")\n    except ValueError:\n        raise\nexcept ValueError as error:\n    print(str(error))'
     )
+
+
+def test_delete_object_attributes():
+    assert_python_output(
+        'class Box:\n    pass\nbox = Box()\nbox.value = 3\ndel box.value\nprint(hasattr(box, "value"))'
+    )

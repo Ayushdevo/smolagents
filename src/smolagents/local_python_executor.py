@@ -1409,6 +1409,11 @@ def evaluate_delete(
                 del state[target.id]
             else:
                 raise InterpreterError(f"Cannot delete name '{target.id}': name is not defined")
+        elif isinstance(target, ast.Attribute):
+            obj = evaluate_ast(target.value, state, static_tools, custom_tools, authorized_imports)
+            if target.attr.startswith("__") and target.attr.endswith("__"):
+                raise InterpreterError(f"Forbidden access to dunder attribute: {target.attr}")
+            delattr(obj, target.attr)
         elif isinstance(target, ast.Subscript):
             # Handle index/key deletion (del x[y])
             obj = evaluate_ast(target.value, state, static_tools, custom_tools, authorized_imports)
