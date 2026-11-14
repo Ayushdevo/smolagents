@@ -461,6 +461,39 @@ def evaluate_while(
     return None
 
 
+def _function_signature(
+    arguments: ast.arguments,
+    state: dict[str, Any],
+    static_tools: dict[str, Callable],
+    custom_tools: dict[str, Callable],
+    authorized_imports: list[str],
+) -> inspect.Signature:
+    parameters = []
+    positional = arguments.posonlyargs + arguments.args
+    defaults = [inspect.Parameter.empty] * (len(positional) - len(arguments.defaults)) + [
+        evaluate_ast(default, state, static_tools, custom_tools, authorized_imports) for default in arguments.defaults
+    ]
+    for index, (argument, default) in enumerate(zip(positional, defaults)):
+        kind = (
+            inspect.Parameter.POSITIONAL_ONLY
+            if index < len(arguments.posonlyargs)
+            else inspect.Parameter.POSITIONAL_OR_KEYWORD
+        )
+        parameters.append(inspect.Parameter(argument.arg, kind, default=default))
+    if arguments.vararg:
+        parameters.append(inspect.Parameter(arguments.vararg.arg, inspect.Parameter.VAR_POSITIONAL))
+    for argument, default_node in zip(arguments.kwonlyargs, arguments.kw_defaults):
+        default = (
+            inspect.Parameter.empty
+            if default_node is None
+            else evaluate_ast(default_node, state, static_tools, custom_tools, authorized_imports)
+        )
+        parameters.append(inspect.Parameter(argument.arg, inspect.Parameter.KEYWORD_ONLY, default=default))
+    if arguments.kwarg:
+        parameters.append(inspect.Parameter(arguments.kwarg.arg, inspect.Parameter.VAR_KEYWORD))
+    return inspect.Signature(parameters)
+
+
 def create_function(
     func_def: ast.FunctionDef,
     state: dict[str, Any],
@@ -469,38 +502,13 @@ def create_function(
     authorized_imports: list[str],
 ) -> Callable:
     source_code = ast.unparse(func_def)
+    signature = _function_signature(func_def.args, state, static_tools, custom_tools, authorized_imports)
 
     def new_func(*args: Any, **kwargs: Any) -> Any:
+        bound = signature.bind(*args, **kwargs)
+        bound.apply_defaults()
         func_state = state.copy()
-        arg_names = [arg.arg for arg in func_def.args.args]
-        default_values = [
-            evaluate_ast(d, state, static_tools, custom_tools, authorized_imports) for d in func_def.args.defaults
-        ]
-
-        # Apply default values
-        defaults = dict(zip(arg_names[-len(default_values) :], default_values))
-
-        # Set positional arguments
-        for name, value in zip(arg_names, args):
-            func_state[name] = value
-
-        # Set keyword arguments
-        for name, value in kwargs.items():
-            func_state[name] = value
-
-        # Handle variable arguments
-        if func_def.args.vararg:
-            vararg_name = func_def.args.vararg.arg
-            func_state[vararg_name] = args
-
-        if func_def.args.kwarg:
-            kwarg_name = func_def.args.kwarg.arg
-            func_state[kwarg_name] = kwargs
-
-        # Set default values for arguments that were not provided
-        for name, value in defaults.items():
-            if name not in func_state:
-                func_state[name] = value
+        func_state.update(bound.arguments)
 
         # Update function state with self and __class__
         if func_def.args.args and func_def.args.args[0].arg == "self":

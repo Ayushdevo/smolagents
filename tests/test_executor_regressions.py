@@ -83,3 +83,24 @@ def test_allow_iterables_in_list_augmented_assignment(value):
 def test_reject_undefined_augmented_assignment_targets():
     with pytest.raises(Exception, match="not defined"):
         evaluate_python_code("missing += 1", static_tools=BASE_PYTHON_TOOLS, timeout_seconds=None)
+
+
+@pytest.mark.parametrize(
+    "code",
+    [
+        "def f(a, /, b=2, *rest, c=3, **extra):\n    return [a, b, rest, c, extra]\nprint(f(1, 4, 5, 6, c=7, other=8))",
+        "x=9\ndef f(x=2):\n    return x\nprint(f())",
+        "x=1\ndef f(a=x):\n    return a\nx=8\nprint(f())",
+        "def f(values=[]):\n    values.append(1)\n    return len(values)\nprint(f(), f())",
+    ],
+)
+def test_bind_function_arguments_with_python_semantics(code):
+    assert_python_output(code)
+
+
+@pytest.mark.parametrize("call", ["f()", "f(1, 2, 3)", "f(1, a=2)", "f(1, unknown=2)"])
+def test_bind_function_arguments_with_python_semantics_rejects_invalid_calls(call):
+    with pytest.raises(Exception, match="(missing|too many|multiple values|unexpected keyword)"):
+        evaluate_python_code(
+            "a=99\ndef f(a, b=2):\n    return a\n" + call, static_tools=BASE_PYTHON_TOOLS, timeout_seconds=None
+        )
