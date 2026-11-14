@@ -193,3 +193,8 @@ def test_resolve_dotted_imports_to_their_root_module():
         timeout_seconds=None,
     )
     assert str(state["_print_outputs"]) == "True\n"
+
+
+def test_do_not_replace_undefined_names_with_similar_variables():
+    with pytest.raises(Exception, match="not defined"):
+        evaluate_python_code("value = 1\nprint(valeu)", static_tools=BASE_PYTHON_TOOLS, timeout_seconds=None)

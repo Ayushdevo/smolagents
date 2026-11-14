@@ -975,9 +975,8 @@ def evaluate_name(
     elif name.id in ERRORS:
         return ERRORS[name.id]
     close_matches = difflib.get_close_matches(name.id, list(state.keys()))
-    if len(close_matches) > 0:
-        return state[close_matches[0]]
-    raise InterpreterError(f"The variable `{name.id}` is not defined.")
+    suggestion = f" Did you mean `{close_matches[0]}`?" if close_matches else ""
+    raise InterpreterError(f"The variable `{name.id}` is not defined.{suggestion}")
 
 
 def evaluate_condition(
