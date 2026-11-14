@@ -230,3 +230,9 @@ def test_short_circuit_chained_comparisons_using_truth_values():
     assert_python_output(
         'class Result:\n    def __bool__(self):\n        print("truth")\n        return False\n    def __str__(self):\n        return "result"\nclass Value:\n    def __lt__(self, other):\n        print("compare")\n        return Result()\nprint(Value() < Value() < Value())'
     )
+
+
+def test_apply_function_decorators():
+    assert_python_output(
+        'events=[]\ndef decorate(label):\n    events.append(label)\n    def apply(fn):\n        def wrapped():\n            return label + fn()\n        return wrapped\n    return apply\n@decorate("a")\n@decorate("b")\ndef value():\n    return "c"\nprint(value(), events)'
+    )

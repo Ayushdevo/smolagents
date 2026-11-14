@@ -539,8 +539,14 @@ def evaluate_function_def(
     custom_tools: dict[str, Callable],
     authorized_imports: list[str],
 ) -> Callable:
-    custom_tools[func_def.name] = create_function(func_def, state, static_tools, custom_tools, authorized_imports)
-    return custom_tools[func_def.name]
+    decorators = [
+        evaluate_ast(node, state, static_tools, custom_tools, authorized_imports) for node in func_def.decorator_list
+    ]
+    function = create_function(func_def, state, static_tools, custom_tools, authorized_imports)
+    for decorator in reversed(decorators):
+        function = decorator(function)
+    custom_tools[func_def.name] = function
+    return function
 
 
 def evaluate_class_def(
