@@ -61,3 +61,9 @@ def test_keep_control_flow_out_of_exception_handlers(statement):
         + '\n        except Exception:\n            print("caught")\n        finally:\n            print("finally")\n    return 9\nprint(run())'
     )
     assert_python_output(body)
+
+
+def test_support_bare_reraise_in_exception_handlers():
+    assert_python_output(
+        'try:\n    try:\n        raise ValueError("original")\n    except ValueError:\n        raise\nexcept ValueError as error:\n    print(str(error))'
+    )

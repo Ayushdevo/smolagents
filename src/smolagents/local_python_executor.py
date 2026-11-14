@@ -1220,7 +1220,7 @@ def evaluate_raise(
         else:
             raise exc
     else:
-        raise InterpreterError("Re-raise is not supported without an active exception")
+        raise
 
 
 def evaluate_assert(
