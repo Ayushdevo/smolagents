@@ -176,7 +176,7 @@ def test_func(**kwargs):
 not_a_dict = [1, 2, 3]
 test_func(**not_a_dict)
 """,
-                "Cannot unpack non-dict value in **kwargs: list",
+                "Cannot unpack non-mapping value in **kwargs: list",
             ),
             # **kwargs with non-dict variable
             (
@@ -186,7 +186,7 @@ def test_func(**kwargs):
 
 test_func(**42)
 """,
-                "Cannot unpack non-dict value in **kwargs: int",
+                "Cannot unpack non-mapping value in **kwargs: int",
             ),
             # **kwargs with None
             (
@@ -196,7 +196,7 @@ def test_func(**kwargs):
 
 test_func(**None)
 """,
-                "Cannot unpack non-dict value in **kwargs: NoneType",
+                "Cannot unpack non-mapping value in **kwargs: NoneType",
             ),
         ],
     )
@@ -926,11 +926,11 @@ var_args_method(1, 2, 3, x=4, y=5)
 """
         state = {}
         result, _ = evaluate_python_code(code, {"sum": sum}, state=state)
-        assert result == 15
+        assert result == 14
 
     def test_exceptions(self):
         code = """
-def method_that_raises(self):
+def method_that_raises():
     raise ValueError("An error occurred")
 
 try:
@@ -963,7 +963,7 @@ except ValueError as e:
     def test_tuple_id(self):
         code = """
 food_items = {"apple": 2, "banana": 3, "orange": 1, "pear": 1}
-unique_food_items = [item for item, count in food_item_counts.items() if count == 1]
+unique_food_items = [item for item, count in food_items.items() if count == 1]
 """
         state = {}
         result, is_final_answer = evaluate_python_code(code, {}, state=state)
@@ -995,7 +995,7 @@ counts = [1, 2, 3]
 counts += 1"""
         with pytest.raises(InterpreterError) as e:
             evaluate_python_code(code, BASE_PYTHON_TOOLS, state={})
-        assert "Cannot add non-list value 1 to a list." in str(e)
+        assert "'int' object is not iterable" in str(e)
 
     def test_error_highlights_correct_line_of_code(self):
         code = """a = 1
@@ -1991,12 +1991,12 @@ class TestEvaluateSubscript:
             ("tup[:]", {"tup": (1, 2, 3)}, (1, 2, 3)),
             ("tup[::2]", {"tup": (1, 2, 3, 4)}, (1, 3)),
             ("tup[::-1]", {"tup": (1, 2, 3)}, (3, 2, 1)),
-            ("st[1]", {"str": "abc"}, "b"),
-            ("st[-1]", {"str": "abc"}, "c"),
-            ("st[1:3]", {"str": "abcd"}, "bc"),
-            ("st[:]", {"str": "abc"}, "abc"),
-            ("st[::2]", {"str": "abcd"}, "ac"),
-            ("st[::-1]", {"str": "abc"}, "cba"),
+            ("st[1]", {"st": "abc"}, "b"),
+            ("st[-1]", {"st": "abc"}, "c"),
+            ("st[1:3]", {"st": "abcd"}, "bc"),
+            ("st[:]", {"st": "abc"}, "abc"),
+            ("st[::2]", {"st": "abcd"}, "ac"),
+            ("st[::-1]", {"st": "abc"}, "cba"),
             ("arr[1]", {"arr": np.array([1, 2, 3])}, 2),
             ("arr[1:3]", {"arr": np.array([1, 2, 3, 4])}, np.array([2, 3])),
             ("arr[:]", {"arr": np.array([1, 2, 3])}, np.array([1, 2, 3])),
@@ -2051,15 +2051,17 @@ class TestEvaluateSubscript:
     )
     def test_evaluate_subscript_error(self, subscript, state, expected_error_message):
         subscript_ast = ast.parse(subscript).body[0].value
-        with pytest.raises(InterpreterError, match="Could not index") as exception_info:
-            _ = evaluate_subscript(subscript_ast, state, {}, {}, [])
-        assert expected_error_message in str(exception_info.value)
+        error_name, message = expected_error_message.split(": ", 1)
+        error_type = {"KeyError": KeyError, "IndexError": IndexError, "TypeError": TypeError}[error_name]
+        with pytest.raises(error_type) as exception_info:
+            evaluate_subscript(subscript_ast, state, {}, {}, [])
+        assert str(exception_info.value) == message
 
     @pytest.mark.parametrize(
         "subscriptable_class, expectation",
         [
             (True, 20),
-            (False, InterpreterError("TypeError: 'Custom' object is not subscriptable")),
+            (False, TypeError("'Custom' object is not subscriptable")),
         ],
     )
     def test_evaluate_subscript_with_custom_class(self, subscriptable_class, expectation):
@@ -2077,9 +2079,9 @@ class TestEvaluateSubscript:
         subscript = "obj[2]"
         subscript_ast = ast.parse(subscript).body[0].value
         if isinstance(expectation, Exception):
-            with pytest.raises(type(expectation), match="Could not index") as exception_info:
+            with pytest.raises(type(expectation)) as exception_info:
                 evaluate_subscript(subscript_ast, state, {}, {}, [])
-            assert "TypeError: 'Custom' object is not subscriptable" in str(exception_info.value)
+            assert str(exception_info.value) == str(expectation)
         else:
             result = evaluate_subscript(subscript_ast, state, {}, {}, [])
             assert result == expectation
@@ -2407,7 +2409,7 @@ class TestLocalPythonExecutor:
     def test_evaluate_assign_error(self):
         code = "a, b = 1, 2, 3; a"
         executor = LocalPythonExecutor([])
-        with pytest.raises(InterpreterError, match=".*Cannot unpack tuple of wrong size"):
+        with pytest.raises(InterpreterError, match=".*Cannot unpack sequence of wrong size"):
             executor(code)
 
     def test_function_def_recovers_source_code(self):
